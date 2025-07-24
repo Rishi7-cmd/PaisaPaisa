@@ -1,74 +1,79 @@
-
 import streamlit as st
 import pandas as pd
 import io
 
-# Set page config with emoji and title
-st.set_page_config(page_title="PaisaPaisa Flowchart Generator", page_icon="🪔", layout="centered")
+st.set_page_config(page_title="PaisaPaisa Flowchart", layout="centered")
 
-# Inject custom Diwali-styled background
-diwali_css = '''
-<style>
-body {
-    background-image: url("https://images.unsplash.com/photo-1604081443663-3af7a8204f5b");
-    background-size: cover;
-    background-attachment: fixed;
-    background-position: center;
-    color: #f5f5f5;
-}
-section.main > div {
-    background-color: rgba(0, 0, 0, 0.75);
-    padding: 2rem;
-    border-radius: 15px;
-    box-shadow: 0 0 20px #ffcc00;
-}
-h1, h2, h3, h4, h5, h6 {
-    color: #ffe066 !important;
-}
-</style>
-'''
-st.markdown(diwali_css, unsafe_allow_html=True)
+# Diwali-themed background and header
+st.markdown("""
+    <style>
+    .stApp {
+        background: radial-gradient(circle at top, #2c2c2c 0%, #0a0a0a 100%) !important;
+        color: #ffffff;
+    }
 
-# App title
-st.title("🪔 PaisaPaisa Layered Transaction Flowchart")
-st.markdown("Upload a transaction Excel file and get a processed flowchart-style Excel as output.")
+    h1 {
+        color: #ffcc00;
+        font-size: 3em;
+        text-shadow: 0 0 10px #ffd700, 0 0 20px #ffaa00;
+        font-weight: 900;
+        text-align: center;
+    }
 
-# Core processing logic
-def process_excel(file, base_filename):
-    df = pd.read_excel(file)
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 120px;
+        background: url('https://i.imgur.com/OT3rI6z.png') repeat-x;
+        z-index: 9999;
+        pointer-events: none;
+        animation: flicker 2s infinite;
+    }
 
-    # Example transformation: (customize as needed)
-    df['Layer'] = df['Layer'].fillna(method='ffill')
-    df = df[df['Amount'] > 50000]  # Filter: amount over 50K
-    df = df[df['Layer'] <= 2]      # Filter: up to Layer 2
-    df = df[df['Withdrawal'] > 0]  # Filter: withdrawals only
+    @keyframes flicker {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-    # Highlight large withdrawals
-    df['Flag'] = df['Withdrawal'].apply(lambda x: "🚨" if x > 100000 else "")
+st.markdown("<h1>🪔 PaisaPaisa Layered Transaction Flowchart</h1>", unsafe_allow_html=True)
+st.write("Upload a transaction Excel file and get a processed flowchart-style Excel as output.")
+
+uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
+
+def process_excel(input_file, base_filename):
+    df = pd.read_excel(input_file)
+    
+    # --- Apply filters ---
+    df = df[df["Amount"] > 50000]
+    df = df[df["Layer"] <= 2]
+    df = df[df["Withdrawal"] > 0]
+
+    # --- Highlight withdrawals over 1 lakh ---
+    def highlight(val):
+        return 'background-color: #ff6666' if val > 100000 else ''
+    
+    styled_df = df.style.applymap(highlight, subset=["Withdrawal"])
 
     output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Filtered')
-        workbook  = writer.book
-        worksheet = writer.sheets['Filtered']
-        format_red = workbook.add_format({'font_color': 'red', 'bold': True})
-        worksheet.conditional_format('G2:G1000', {'type': 'text',
-                                                  'criteria': 'containing',
-                                                  'value': '🚨',
-                                                  'format': format_red})
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        styled_df.to_excel(writer, index=False, sheet_name="Filtered Data")
+    
     output.seek(0)
     return output
 
-# File uploader
-uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
+if uploaded_file:
+    base_name = uploaded_file.name.rsplit(".", 1)[0]
+    output_buffer = process_excel(uploaded_file, base_name)
 
-if uploaded_file is not None:
-    base_filename = uploaded_file.name.rsplit(".", 1)[0]
-    output_buffer = process_excel(uploaded_file, base_filename)
-    st.success("✅ Processing complete!")
+    st.success("✅ File processed successfully!")
     st.download_button(
-        label="📥 Download Result Excel",
+        label="📥 Download Processed Excel",
         data=output_buffer,
-        file_name=f"{base_filename}_output.xlsx",
+        file_name=f"{base_name}_output.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
