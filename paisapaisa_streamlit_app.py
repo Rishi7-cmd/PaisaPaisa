@@ -5,33 +5,36 @@ import io
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 
-# 🎇 Custom Diwali theme and glowing header
+# ✨ Custom Diwali theme with spaced glow
 st.markdown("""
     <style>
         html, body, [class*="css"] {
             background-color: #0e0e0e !important;
         }
 
-        .title-text {
-            font-size: 40px;
-            font-weight: 900;
+        .title-box {
             text-align: center;
+            line-height: 1.5;
+            margin-top: 30px;
+            margin-bottom: 0px;
+        }
+
+        .title-glow {
+            font-size: 38px;
+            font-weight: 900;
             color: #ffcc00;
             text-shadow:
                 0 0 5px #ffcc00,
                 0 0 10px #ff9900,
-                0 0 20px #ff6600,
-                0 0 30px #ff3300;
-            margin-bottom: 0px;
-            margin-top: 20px;
-            line-height: 1.2;
+                0 0 15px #ff6600,
+                0 0 20px #ff3300;
         }
 
         .subtext {
             text-align: center;
             font-size: 16px;
             color: #cccccc;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
 
         .stFileUploader label {
@@ -46,8 +49,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Header and subtitle
-st.markdown('<div class="title-text">🪔 PaisaPaisa Layered<br>Transaction Flowchart</div>', unsafe_allow_html=True)
+# Title section
+st.markdown("""
+    <div class="title-box">
+        <div class="title-glow">🪔 PaisaPaisa Layered</div>
+        <div class="title-glow">Transaction Flowchart</div>
+    </div>
+""", unsafe_allow_html=True)
+
+# Subtitle
 st.markdown('<div class="subtext">Upload a transaction Excel file and get a processed flowchart-style Excel as output.</div>', unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
@@ -55,7 +65,6 @@ uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 def process_excel(file):
     df = pd.read_excel(file)
 
-    # Filters: amount > 50k, highlight withdrawals > 1L
     df = df[df['Amount'] > 50000]
 
     wb = Workbook()
