@@ -1,45 +1,29 @@
 import streamlit as st
 import pandas as pd
-import io
+from paisapaisa_core import process_excel  # Your core logic
 
-# Re-inlined core logic
-def process_excel(uploaded_file, output_filename):
-    df = pd.read_excel(uploaded_file)
-
-    # Dummy processing for testing – replace with actual logic
-    df["Processed"] = "✅"
-
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False)
-    output.seek(0)
-    return output
-
-# Streamlit config
 st.set_page_config(page_title="PaisaPaisa Flowchart", layout="centered")
 
-# Custom glowing background
+# Diwali-themed background CSS
 st.markdown("""
     <style>
         body {
-            background-color: #0e0e0e;
-            background-image: radial-gradient(circle at 20% 20%, #ff9933 1px, transparent 1px),
-                              radial-gradient(circle at 80% 30%, #ffff66 1px, transparent 1px),
-                              radial-gradient(circle at 50% 80%, #ff66cc 1px, transparent 1px);
-            background-size: 15px 15px;
-            animation: flicker 2s infinite alternate;
+            background-color: #0d0d0d;
+            background-image:
+              radial-gradient(circle at 10% 20%, rgba(255, 102, 0, 0.3) 2px, transparent 2px),
+              radial-gradient(circle at 90% 30%, rgba(255, 255, 102, 0.2) 1px, transparent 2px),
+              radial-gradient(circle at 50% 90%, rgba(255, 105, 180, 0.15) 2px, transparent 1px),
+              radial-gradient(circle at 30% 70%, rgba(255, 140, 0, 0.25) 1.5px, transparent 1px);
+            background-size: 30px 30px;
+            animation: diwaliGlow 3s ease-in-out infinite alternate;
         }
 
-        @keyframes flicker {
+        @keyframes diwaliGlow {
             from {
-                background-image: radial-gradient(circle at 20% 20%, #ff9933 2px, transparent 1px),
-                                  radial-gradient(circle at 80% 30%, #ffff66 2px, transparent 1px),
-                                  radial-gradient(circle at 50% 80%, #ff66cc 2px, transparent 1px);
+                background-position: 0 0, 10px 10px, 20px 20px, 30px 30px;
             }
             to {
-                background-image: radial-gradient(circle at 20% 20%, #ffcc80 1px, transparent 1px),
-                                  radial-gradient(circle at 80% 30%, #ffff99 1px, transparent 1px),
-                                  radial-gradient(circle at 50% 80%, #ff99cc 1px, transparent 1px);
+                background-position: 5px 5px, 15px 15px, 25px 25px, 35px 35px;
             }
         }
 
@@ -48,13 +32,13 @@ st.markdown("""
             font-size: 2.8em;
             font-weight: bold;
             color: #FFD700;
-            text-shadow: 0 0 10px #FF8C00, 0 0 20px #FF8C00;
+            text-shadow: 0 0 20px #FF8C00, 0 0 30px #FF8C00, 0 0 40px #FF8C00;
             margin-bottom: 0.5em;
         }
 
         .subtext {
             text-align: center;
-            color: #ffffffcc;
+            color: #eeeeeecc;
             font-size: 1.2em;
             margin-bottom: 2em;
         }
@@ -63,12 +47,22 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# App title and instructions
 st.markdown('<div class="title">🪔 PaisaPaisa Layered Transaction Flowchart</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtext">Upload a transaction Excel file and get a processed flowchart-style Excel as output.</div>', unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
-    base_filename = uploaded_file.name.replace(".xlsx", "")
-    output_buffer = process_excel(uploaded_file, base_filename + "_output.xlsx")
-    st.download_button("Download Processed File", output_buffer, file_name=base_filename + "_output.xlsx")
+    with st.spinner("🔍 Processing your file..."):
+        try:
+            output_file = process_excel(uploaded_file)
+            st.success("✅ File processed successfully!")
+            st.download_button(
+                label="📥 Download Output Excel",
+                data=output_file,
+                file_name=f"{uploaded_file.name.split('.')[0]}_output.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        except Exception as e:
+            st.error(f"❌ Error processing file: {e}")
