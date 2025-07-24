@@ -1,54 +1,69 @@
 import streamlit as st
 import pandas as pd
 import io
-from paisapaisa_core import process_excel
+import xlsxwriter
+from datetime import datetime
 
-# Set custom background using CSS
-st.markdown(
-    """
+# Set page config
+st.set_page_config(page_title="PaisaPaisa Layered Flowchart", layout="wide")
+
+# Diwali-lit dark room CSS background
+st.markdown("""
     <style>
-    .stApp {
-        background-image: url("bg.jpg");
-        background-size: cover;
-        background-position: center;
+    body {
+        background-color: #0d0d0d;
+        background-image: radial-gradient(circle at 20% 30%, #ffcc00 0%, transparent 40%),
+                          radial-gradient(circle at 80% 20%, #ff6600 0%, transparent 40%),
+                          radial-gradient(circle at 50% 70%, #ff3399 0%, transparent 40%);
         background-repeat: no-repeat;
         background-attachment: fixed;
+        color: #ffffff;
     }
-    .main-title {
-        font-size: 50px;
-        font-weight: bold;
-        color: #000000;
-        text-shadow: 0 0 10px #FFD700, 0 0 20px #FFA500;
-        text-align: center;
-    }
+    .css-1d391kg {background-color: rgba(0, 0, 0, 0.6);}
+    .css-1offfwp {background-color: rgba(0, 0, 0, 0.6);}
     </style>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">💸 Paisa Paisa Forensics</div>', unsafe_allow_html=True)
-st.write("")
+st.title("🪔 PaisaPaisa Layered Transaction Flowchart")
+st.write("Upload a transaction Excel file and get a processed flowchart-style Excel as output.")
 
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
+def process_excel(file, base_filename):
+    df = pd.read_excel(file)
+
+    # Apply filters
+    df_filtered = df[(df['Amount'] > 50000) & (df['Layer'] <= 2)]
+    df_filtered = df_filtered[df_filtered['Withdrawal'].notnull()]
+    
+    output = io.BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df_filtered.to_excel(writer, index=False, sheet_name='Filtered')
+
+    workbook = writer.book
+    worksheet = writer.sheets['Filtered']
+
+    # Format for withdrawals over 1 lakh
+    highlight_format = workbook.add_format({'bg_color': '#FF6666'})
+    for row_num, amount in enumerate(df_filtered['Withdrawal'], start=1):
+        if amount > 100000:
+            worksheet.set_row(row_num, cell_format=highlight_format)
+
+    writer.close()
+    output.seek(0)
+
+    return output
+
 if uploaded_file is not None:
+    filename = uploaded_file.name.rsplit('.', 1)[0]
     try:
-        output_df = process_excel(uploaded_file)
+        output_buffer = process_excel(uploaded_file, filename)
         st.success("✅ File processed successfully!")
-        st.dataframe(output_df)
-
-        # Prepare Excel download
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            output_df.to_excel(writer, index=False)
-        buffer.seek(0)
-
         st.download_button(
-            label="📥 Download Processed Excel",
-            data=buffer,
-            file_name="processed_output.xlsx",
+            label="📥 Download Output Excel",
+            data=output_buffer,
+            file_name=f"{filename}_output.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
     except Exception as e:
-        st.error(f"Error processing file: {str(e)}")
+        st.error(f"❌ Failed to process file: {e}")
