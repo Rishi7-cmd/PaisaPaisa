@@ -7,7 +7,10 @@ def process_excel(uploaded_file):
     df = pd.read_excel(uploaded_file)
 
     # Example transformation logic (replace with actual logic)
-    df['Processed_Amount'] = df['Amount'] * 1.18  # GST example
+    if 'Amount' in df.columns:
+    df['Processed_Amount'] = df['Amount'] * 1.18
+else:
+    df['Processed_Amount'] = 0  #  
 
     # Save output to in-memory buffer
     output = io.BytesIO()
