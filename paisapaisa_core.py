@@ -1,21 +1,29 @@
 import pandas as pd
-import re
 
-def process_excel(file):
-    df = pd.read_excel(file)
+def process_excel(uploaded_file):
+    df = pd.read_excel(uploaded_file)
 
-    # Try to find the 'Amount' column flexibly
+    # Try to find the correct column name for Amount
     amount_col = None
     for col in df.columns:
-        if re.search(r'amount', col, re.IGNORECASE):
+        if "amount" in col.lower():
             amount_col = col
             break
 
-    if not amount_col:
-        raise KeyError("Could not find any column containing 'amount' in its name. Please check your Excel.")
+    if amount_col is None:
+        raise KeyError("No amount column found in the Excel file.")
 
-    # GST example (can remove this if not needed)
-    df['Processed_Amount'] = df[amount_col] * 1.18
+    # Clean the amount column: remove commas, extract numbers, convert to float
+    df[amount_col] = (
+        df[amount_col]
+        .astype(str)
+        .str.replace(",", "", regex=False)
+        .str.extract(r"([\d.]+)")[0]
+        .astype(float)
+    )
 
-    # Add any additional processing here if needed
+    # Example: Create a processed column using GST multiplier
+    df["Processed_Amount"] = df[amount_col] * 1.18  # Adjust multiplier as needed
+
+    # You can return or further process the dataframe here
     return df
