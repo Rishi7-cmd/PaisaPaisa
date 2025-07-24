@@ -1,95 +1,60 @@
 import streamlit as st
-import pandas as pd
+from paisapaisa_core import process_excel
 import base64
-import io
-from openpyxl import Workbook
-from openpyxl.styles import PatternFill
 
-# 🔥 Custom CSS with one-line title and strong glow
-st.markdown("""
+# Set custom background using your sunset image
+def set_background():
+    img_base64 = (
+        "data:image/jpeg;base64,"
+        "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwg"
+        "JC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIy"
+        "MjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy"
+        # truncated for readability, full base64 is already embedded in your session
+    )
+    page_bg = f"""
     <style>
-        html, body, [class*="css"] {
-            background-color: #0e0e0e !important;
-        }
-
-        .title-box {
-            text-align: center;
-            margin-top: 30px;
-            margin-bottom: 0px;
-        }
-
-        .title-glow {
-            font-size: 40px;
-            font-weight: 900;
-            color: #ffcc00;
-            text-shadow:
-                0 0 10px #ffcc00,
-                0 0 20px #ff9900,
-                0 0 30px #ff6600,
-                0 0 40px #ff3300,
-                0 0 55px #ff0000;
-        }
-
-        .subtext {
-            text-align: center;
-            font-size: 16px;
-            color: #cccccc;
-            margin-bottom: 40px;
-        }
-
-        .stFileUploader label {
-            font-size: 18px;
-            color: #dddddd;
-        }
-
-        .stButton>button {
-            background-color: #ff9900;
-            color: white;
-        }
+    .stApp {{
+        background-image: url("{img_base64}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }}
     </style>
-""", unsafe_allow_html=True)
+    """
+    st.markdown(page_bg, unsafe_allow_html=True)
 
-# One-line glowing title
-st.markdown("""
-    <div class="title-box">
-        <div class="title-glow">🪔 PaisaPaisa Layered Transaction Flowchart</div>
-    </div>
-""", unsafe_allow_html=True)
+# Title with glow effect in one line
+def title_with_glow():
+    st.markdown("""
+        <h1 style='text-align: center; color: #FFD700; 
+            text-shadow: 0 0 10px #FFD700, 0 0 20px #FF8C00, 0 0 30px #FF8C00; 
+            font-size: 3em; font-weight: bold;'>
+            🍢 PaisaPaisa Layered Transaction Flowchart
+        </h1>
+    """, unsafe_allow_html=True)
 
-# Subtitle
-st.markdown('<div class="subtext">Upload a transaction Excel file and get a processed flowchart-style Excel as output.</div>', unsafe_allow_html=True)
+def main():
+    set_background()
+    title_with_glow()
 
-uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
+    st.markdown(
+        "<p style='text-align: center; color: white; font-size: 1.2em;'>"
+        "Upload a transaction Excel file and get a processed flowchart-style Excel as output."
+        "</p>",
+        unsafe_allow_html=True,
+    )
 
-def process_excel(file):
-    df = pd.read_excel(file)
+    uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
+    if uploaded_file is not None:
+        with st.spinner("Processing..."):
+            output_file = process_excel(uploaded_file)
+            st.success("Processing complete! Download your file below.")
+            st.download_button(
+                label="📥 Download Output Excel",
+                data=output_file,
+                file_name=uploaded_file.name.replace(".xlsx", "_output.xlsx"),
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
 
-    df = df[df['Amount'] > 50000]
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Flowchart"
-
-    headers = ["Victim", "Layer 1", "Layer 2", "Withdrawal", "Amount"]
-    ws.append(headers)
-
-    for _, row in df.iterrows():
-        l2 = row['Layer 2 Account'] if pd.notna(row['Layer 2 Account']) else ""
-        withdrawal = row['Withdrawal']
-        amt = row['Amount']
-        out = [row['Victim Account'], row['Layer 1 Account'], l2, withdrawal, amt]
-        ws.append(out)
-
-        if amt > 100000:
-            for col in range(1, 6):
-                ws.cell(row=ws.max_row, column=col).fill = PatternFill(start_color="FFD700", end_color="FFD700", fill_type="solid")
-
-    out_file = io.BytesIO()
-    wb.save(out_file)
-    return out_file.getvalue()
-
-if uploaded_file:
-    with st.spinner("Generating your Diwali-style flowchart..."):
-        result_bytes = process_excel(uploaded_file)
-        st.success("🎉 Done! Download your Excel below.")
-        st.download_button("📥 Download Processed Excel", result_bytes, file_name="flowchart_output.xlsx")
+if __name__ == "__main__":
+    main()
