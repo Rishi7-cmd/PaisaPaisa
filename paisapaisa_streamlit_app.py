@@ -32,8 +32,12 @@ uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 def process_excel(file, base_filename):
     df = pd.read_excel(file)
 
+    # Use 'Disputed Amount' instead of 'Amount'
+    if 'Disputed Amount' not in df.columns:
+        raise ValueError("Expected column 'Disputed Amount' not found in file.")
+
     # Apply filters
-    df_filtered = df[(df['Amount'] > 50000) & (df['Layer'] <= 2)]
+    df_filtered = df[(df['Disputed Amount'] > 50000) & (df['Layer'] <= 2)]
     df_filtered = df_filtered[df_filtered['Withdrawal'].notnull()]
     
     output = io.BytesIO()
