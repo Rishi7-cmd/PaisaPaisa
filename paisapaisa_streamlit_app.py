@@ -2,46 +2,52 @@ import streamlit as st
 import pandas as pd
 import base64
 import io
-import time
 from openpyxl import Workbook
+from openpyxl.styles import PatternFill
 
-# 🌃 Diwali-inspired dark room theme
+# 🎇 Custom Diwali theme and glowing header
 st.markdown("""
     <style>
-        body {
-            background-color: #0e0e0e;
-            background-image: radial-gradient(#ffcc00 0.5px, #0e0e0e 1px);
-            background-size: 20px 20px;
+        html, body, [class*="css"] {
+            background-color: #0e0e0e !important;
         }
-        .stApp {
-            background-color: #0e0e0e;
-            color: #f1f1f1;
-        }
+
         .title-text {
-            font-size: 48px;
-            font-weight: 800;
-            color: #ffd700;
-            text-shadow: 0 0 5px #ff9933, 0 0 10px #ff6600, 0 0 15px #cc3300;
+            font-size: 40px;
+            font-weight: 900;
             text-align: center;
-            margin-top: 30px;
+            color: #ffcc00;
+            text-shadow:
+                0 0 5px #ffcc00,
+                0 0 10px #ff9900,
+                0 0 20px #ff6600,
+                0 0 30px #ff3300;
+            margin-bottom: 0px;
+            margin-top: 20px;
+            line-height: 1.2;
         }
+
         .subtext {
             text-align: center;
-            font-size: 18px;
-            color: #dddddd;
+            font-size: 16px;
+            color: #cccccc;
             margin-bottom: 30px;
         }
-        .css-1aumxhk {
-            background-color: #111 !important;
+
+        .stFileUploader label {
+            font-size: 18px;
+            color: #dddddd;
         }
+
         .stButton>button {
-            background-color: #ff9900 !important;
-            color: white !important;
+            background-color: #ff9900;
+            color: white;
         }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="title-text">🪔 PaisaPaisa Layered Transaction<br>Flowchart</div>', unsafe_allow_html=True)
+# Header and subtitle
+st.markdown('<div class="title-text">🪔 PaisaPaisa Layered<br>Transaction Flowchart</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtext">Upload a transaction Excel file and get a processed flowchart-style Excel as output.</div>', unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
@@ -49,7 +55,7 @@ uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 def process_excel(file):
     df = pd.read_excel(file)
 
-    # Filter > ₹50,000 and withdrawals > ₹1L
+    # Filters: amount > 50k, highlight withdrawals > 1L
     df = df[df['Amount'] > 50000]
 
     wb = Workbook()
@@ -59,25 +65,23 @@ def process_excel(file):
     headers = ["Victim", "Layer 1", "Layer 2", "Withdrawal", "Amount"]
     ws.append(headers)
 
-    for i in range(len(df)):
-        row = df.iloc[i]
-        layer2 = row['Layer 2 Account'] if pd.notna(row['Layer 2 Account']) else ""
-        withdrawal = "Yes" if row['Withdrawal'] == "Yes" else "No"
+    for _, row in df.iterrows():
+        l2 = row['Layer 2 Account'] if pd.notna(row['Layer 2 Account']) else ""
+        withdrawal = row['Withdrawal']
         amt = row['Amount']
-        out_row = [row['Victim Account'], row['Layer 1 Account'], layer2, withdrawal, amt]
-
-        ws.append(out_row)
+        out = [row['Victim Account'], row['Layer 1 Account'], l2, withdrawal, amt]
+        ws.append(out)
 
         if amt > 100000:
             for col in range(1, 6):
-                ws.cell(row=ws.max_row, column=col).fill = openpyxl.styles.PatternFill(start_color="FFD700", end_color="FFD700", fill_type="solid")
+                ws.cell(row=ws.max_row, column=col).fill = PatternFill(start_color="FFD700", end_color="FFD700", fill_type="solid")
 
-    output = io.BytesIO()
-    wb.save(output)
-    return output.getvalue()
+    out_file = io.BytesIO()
+    wb.save(out_file)
+    return out_file.getvalue()
 
 if uploaded_file:
-    with st.spinner("Generating your layered flowchart... 💡"):
-        result = process_excel(uploaded_file)
-        st.success("Done! Download below:")
-        st.download_button("📥 Download Flowchart Excel", result, file_name="flowchart_output.xlsx")
+    with st.spinner("Generating your Diwali-style flowchart..."):
+        result_bytes = process_excel(uploaded_file)
+        st.success("🎉 Done! Download your Excel below.")
+        st.download_button("📥 Download Processed Excel", result_bytes, file_name="flowchart_output.xlsx")
