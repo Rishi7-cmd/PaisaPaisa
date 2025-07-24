@@ -1,65 +1,70 @@
 import streamlit as st
-from paisapaisa_core import process_excel  # Your core logic
+from paisapaisa_core import process_excel
 from io import BytesIO
 
-# Set page config
 st.set_page_config(
     page_title="PaisaPaisa Layered Flow",
-    layout="centered",
+    layout="centered"
 )
 
-# Custom background and styling
-page_bg_img = '''
+# Custom Diwali background and styling
+page_bg = """
 <style>
 [data-testid="stAppViewContainer"] {
-    background-image: url("bg.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background-color: #0d0d0d;
+    background-image: radial-gradient(#ffaa00 1px, transparent 1px),
+                      radial-gradient(#ffaa00 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: 0 0, 20px 20px;
 }
 
 h1 {
-    font-size: 3.5em !important;
-    color: black;
-    text-shadow: 2px 2px 8px orange;
+    color: #ffcc00;
     text-align: center;
+    font-size: 3em;
+    font-weight: bold;
+    text-shadow: 0 0 10px #ffaa00, 0 0 20px #ffaa00, 0 0 30px #ffaa00;
     margin-top: 20px;
-    margin-bottom: 10px;
+    margin-bottom: 30px;
 }
 
-.upload-section {
-    background-color: rgba(0, 0, 0, 0.5);
-    padding: 2em;
-    border-radius: 15px;
-    margin-top: 30px;
-}
-
-.stButton > button {
-    background-color: orange;
-    color: black;
+.stFileUploader, .stButton > button {
+    background-color: #1a1a1a;
+    border: 1px solid #ffaa00;
+    color: #ffaa00;
     border-radius: 10px;
+    padding: 10px;
     font-weight: bold;
 }
+
+.stDownloadButton > button {
+    background-color: #ffaa00;
+    color: black;
+    font-weight: bold;
+    border-radius: 10px;
+    padding: 10px 20px;
+}
+
+.stMarkdown {
+    color: #ffcc00;
+}
 </style>
-'''
-st.markdown(page_bg_img, unsafe_allow_html=True)
+"""
+st.markdown(page_bg, unsafe_allow_html=True)
 
-# Heading
-st.markdown("<h1>🌅 PaisaPaisa Layered Transaction Flowchart</h1>", unsafe_allow_html=True)
+# Title
+st.markdown("<h1>🪔 PaisaPaisa Layered Transaction Flow</h1>", unsafe_allow_html=True)
 
-# File upload
-with st.container():
-    uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
+uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
-    if uploaded_file is not None:
-        with st.spinner("Processing..."):
-            output_excel = process_excel(uploaded_file)
+if uploaded_file is not None:
+    with st.spinner("Processing file..."):
+        output = process_excel(uploaded_file)
 
-            # Download button
-            st.success("Processing complete!")
-            st.download_button(
-                label="📥 Download Output Excel",
-                data=output_excel,
-                file_name=uploaded_file.name.replace('.xlsx', '_output.xlsx'),
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+        st.success("✅ Done! Click below to download:")
+        st.download_button(
+            label="📥 Download Processed Excel",
+            data=output,
+            file_name=uploaded_file.name.replace('.xlsx', '_output.xlsx'),
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
